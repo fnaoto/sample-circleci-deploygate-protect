@@ -18,6 +18,7 @@ jobs:
           key: gradle-cache-{{ checksum "app/android/build.gradle" }}
           paths:
             - "app/android/.gradle"
+            - "app/android/gradle"
       - run: |
           curl \
             -H "Authorization: token ${DG_TOKEN}" \
