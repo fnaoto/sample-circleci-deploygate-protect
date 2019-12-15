@@ -1,2 +1,2 @@
 # sample-circleci-deploygate-protect
-Sample code for protect apk in DeployGate with CircleCI.
+Sample code to protect apk in DeployGate with CircleCI.
