@@ -19,10 +19,8 @@ jobs:
           paths:
             - "app/android/.gradle"
       - run: |
-          working_directory: app
-          command: |
-            curl \
-              -H "Authorization: token ${DG_TOKEN}" \
-              -F "file=@build/app/outputs/apk/app.apk" \
-              -F "message=${CIRCLE_SHA1}" \
-              "https://deploygate.com/api/users/${DG_USER}/apps"
+          curl \
+            -H "Authorization: token ${DG_TOKEN}" \
+            -F "file=@app/build/app/outputs/apk/app.apk" \
+            -F "message=${CIRCLE_SHA1}" \
+            "https://deploygate.com/api/users/${DG_USER}/apps"
