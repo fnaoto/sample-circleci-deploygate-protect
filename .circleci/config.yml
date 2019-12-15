@@ -5,16 +5,24 @@ jobs:
       - image: cirrusci/flutter
     steps:
       - checkout
+      - restore_cache:
+          keys:
+            - gradle-cache-{{ checksum "app/android/build.gradle" }}
       - run:
           working_directory: app
           command: |
             flutter doctor
             flutter test
             flutter -v build apk
+      - save_cache:
+          key: gradle-cache-{{ checksum "app/android/build.gradle" }}
+          paths:
+            - "app/android/.gradle"
       - run: |
           working_directory: app
-          curl \
-            -H "Authorization: token ${DG_TOKEN}" \
-            -F "file=@build/app/outputs/apk/app.apk" \
-            -F "message=${CIRCLE_SHA1}" \
-            "https://deploygate.com/api/users/${DG_USER}/apps"
+          command: |
+            curl \
+              -H "Authorization: token ${DG_TOKEN}" \
+              -F "file=@build/app/outputs/apk/app.apk" \
+              -F "message=${CIRCLE_SHA1}" \
+              "https://deploygate.com/api/users/${DG_USER}/apps"
