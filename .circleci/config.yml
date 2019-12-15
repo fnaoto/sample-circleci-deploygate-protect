@@ -37,7 +37,7 @@ jobs:
             - app.apk
   publish:
     docker:
-      - image: alpine
+      - image: ubuntu
     steps:
       - attach_workspace:
           at: /tmp
@@ -54,7 +54,7 @@ jobs:
             - result.out
   protect:
     docker:
-      - image: alpine
+      - image: ubuntu
     steps:
       - attach_workspace:
           at: /tmp
