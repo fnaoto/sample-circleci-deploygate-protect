@@ -5,7 +5,9 @@ jobs:
       - image: cirrusci/flutter
     steps:
       - checkout
-      - run: cd app
-      - run: flutter doctor
-      - run: flutter test
-      - run: flutter -v build apk
+      - run:
+          working_directory: app
+          command: |
+            flutter doctor
+            flutter test
+            flutter -v build apk
