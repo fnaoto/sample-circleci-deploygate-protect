@@ -46,7 +46,7 @@ jobs:
           curl \
             -X POST \
             -F "token=${DG_TOKEN}" \
-            -F "file=@app/build/app/outputs/apk/app.apk" \
+            -F "file=@/tmp/app.apk" \
             -F "message=${CIRCLE_SHA1}" \
             "https://deploygate.com/api/users/${DG_USER}/apps" | tee /tmp/result.out
       - persist_to_workspace:
