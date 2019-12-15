@@ -1,27 +1,78 @@
-version: 2
+version: 2.1
+
+commands:
+  flutter_restore_cache:
+    steps:
+      - restore_cache:
+          keys: flutter-cache-{{ .Branch }}
+  flutter_save_cache:
+    parameters:
+      root_path:
+        type: string
+        default: "app"
+    steps:
+      - save_cache:
+          key: flutter-cache-{{ .Branch }}
+          paths:
+            - "<< parameters.root_path >>/android/.gradle"
+            - "<< parameters.root_path >>/android/gradle"
+            - "<< parameters.root_path >>/build"
+
 jobs:
   build:
     docker:
       - image: cirrusci/flutter
     steps:
       - checkout
-      - restore_cache:
-          keys:
-            - gradle-cache-{{ checksum "app/android/build.gradle" }}
+      - flutter_restore_cache
       - run:
           working_directory: app
           command: |
-            flutter doctor
-            flutter test
             flutter -v build apk
-      - save_cache:
-          key: gradle-cache-{{ checksum "app/android/build.gradle" }}
+            cp app/build/app/outputs/apk/app.apk /tmp
+      - flutter_save_cache
+      - persist_to_workspace:
+          root: /tmp
           paths:
-            - "app/android/.gradle"
-            - "app/android/gradle"
+            - app.apk
+  publish:
+    docker:
+      - image: alpine
+    steps:
+      - attach_workspace:
+          at: /tmp
       - run: |
           curl \
-            -H "Authorization: token ${DG_TOKEN}" \
-            -F "file=@app/build/app/outputs/apk/app.apk" \
+            -X POST \
+            -F "token=${DG_TOKEN}" \
+            -F "file=@/tmp/app.apk" \
             -F "message=${CIRCLE_SHA1}" \
-            "https://deploygate.com/api/users/${DG_USER}/apps"
+            "https://deploygate.com/api/users/${DG_USER}/apps" | tee /tmp/result.out
+      - persist_to_workspace:
+          root: /tmp
+          paths:
+            - result.out
+  protect:
+    docker:
+      - image: alpine
+    steps:
+      - attach_workspace:
+          at: /tmp
+      - run: |
+          APP_ID="$(cat /tmp/result.out | jq -r .results.package_name)"
+          REVISION="$(cat /tmp/result.out | jq -r .results.revision)"
+          curl \
+            -X POST \
+            -F "token=${DG_TOKEN}" \
+            https://deploygate.com/api/users/${DG_USER}/platforms/android/apps/${APP_ID}/binaries/${REVISION}/protect
+
+workflows:
+  version: 2
+  build:
+    jobs:
+      - build
+      - publish
+      - protect:
+          filters:
+            branches:
+              only: master
