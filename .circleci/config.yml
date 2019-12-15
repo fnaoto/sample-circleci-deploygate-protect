@@ -12,6 +12,7 @@ jobs:
             flutter test
             flutter -v build apk
       - run: |
+          working_directory: app
           curl \
             -H "Authorization: token ${DG_TOKEN}" \
             -F "file=@build/app/outputs/apk/app.apk" \
