@@ -17,6 +17,7 @@ commands:
             - "<< parameters.root_path >>/android/.gradle"
             - "<< parameters.root_path >>/android/gradle"
             - "<< parameters.root_path >>/build"
+            - /opt/android-sdk-linux/
 
 jobs:
   build:
@@ -37,7 +38,7 @@ jobs:
             - app.apk
   publish:
     docker:
-      - image: ubuntu
+      - image: circleci/node
     steps:
       - attach_workspace:
           at: /tmp
@@ -45,7 +46,7 @@ jobs:
           curl \
             -X POST \
             -F "token=${DG_TOKEN}" \
-            -F "file=@/tmp/app.apk" \
+            -F "file=@app/build/app/outputs/apk/app.apk" \
             -F "message=${CIRCLE_SHA1}" \
             "https://deploygate.com/api/users/${DG_USER}/apps" | tee /tmp/result.out
       - persist_to_workspace:
@@ -54,7 +55,7 @@ jobs:
             - result.out
   protect:
     docker:
-      - image: ubuntu
+      - image: circleci/node
     steps:
       - attach_workspace:
           at: /tmp
