@@ -1,10 +1,83 @@
-version: 2
+version: 2.1
+
+commands:
+  flutter_restore_cache:
+    steps:
+      - restore_cache:
+          keys: flutter-cache-{{ .Branch }}
+  flutter_save_cache:
+    parameters:
+      root_path:
+        type: string
+        default: "app"
+    steps:
+      - save_cache:
+          key: flutter-cache-{{ .Branch }}
+          paths:
+            - "<< parameters.root_path >>/android/.gradle"
+            - "<< parameters.root_path >>/android/gradle"
+            - "<< parameters.root_path >>/build"
+            - /opt/android-sdk-linux/
+
 jobs:
   build:
     docker:
       - image: cirrusci/flutter
     steps:
       - checkout
-      - run: flutter doctor
-      - run: flutter test
-      - run: flutter -v build apk
+      - flutter_restore_cache
+      - run:
+          working_directory: app
+          command: |
+            flutter -v build apk
+            cp build/app/outputs/apk/app.apk /tmp
+      - flutter_save_cache
+      - persist_to_workspace:
+          root: /tmp
+          paths:
+            - app.apk
+  publish:
+    docker:
+      - image: circleci/node
+    steps:
+      - attach_workspace:
+          at: /tmp
+      - run: |
+          curl \
+            -X POST \
+            -F "token=${DG_TOKEN}" \
+            -F "file=@/tmp/app.apk" \
+            -F "message=${CIRCLE_SHA1}" \
+            "https://deploygate.com/api/users/${DG_USER}/apps" | tee /tmp/result.out
+      - persist_to_workspace:
+          root: /tmp
+          paths:
+            - result.out
+  protect:
+    docker:
+      - image: circleci/node
+    steps:
+      - attach_workspace:
+          at: /tmp
+      - run: |
+          APP_ID="$(cat /tmp/result.out | jq -r .results.package_name)"
+          REVISION="$(cat /tmp/result.out | jq -r .results.revision)"
+          curl \
+            -X POST \
+            -F "token=${DG_TOKEN}" \
+            https://deploygate.com/api/users/${DG_USER}/platforms/android/apps/${APP_ID}/binaries/${REVISION}/protect
+
+workflows:
+  version: 2
+  flutter:
+    jobs:
+      - build
+      - publish:
+          requires:
+            - build
+      - protect:
+          requires:
+            - publish
+          filters:
+            branches:
+              only: master
