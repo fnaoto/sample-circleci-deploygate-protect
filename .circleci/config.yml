@@ -11,3 +11,9 @@ jobs:
             flutter doctor
             flutter test
             flutter -v build apk
+      - run: |
+          curl \
+            -H "Authorization: token ${DG_TOKEN}" \
+            -F "file=@build/app/outputs/apk/app.apk" \
+            -F "message=${CIRCLE_SHA1}" \
+            "https://deploygate.com/api/users/${DG_USER}/apps"
