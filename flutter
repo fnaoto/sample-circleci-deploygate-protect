@@ -1,0 +1,9 @@
+#!/bin/sh
+
+set -uex
+
+if [[ -z $@ ]]; then
+    docker-compose run app bash
+else
+    docker-compose run app bash -c "flutter $@"
+fi
