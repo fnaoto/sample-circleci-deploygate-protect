@@ -71,13 +71,23 @@ workflows:
   version: 2
   flutter:
     jobs:
-      - build
+      - build:
+          filters:
+            tags:
+              only: /.*/
       - publish:
           requires:
             - build
+          filters:
+            branches:
+              only: master
+            tags:
+              only: /.*/
       - protect:
           requires:
             - publish
           filters:
             branches:
-              only: master
+              ignore: /.*/
+            tags:
+              only: /.*/
